@@ -11,18 +11,18 @@ env:
   
 jobs:
   osx_job:
-    runs-on: macOS-latest
+    runs-on: macos-latest
     env:
       BOOST_ROOT: /tmp/boost
     steps:
-      - uses: actions/checkout@722adc6
+      - uses: actions/checkout@5a4ac90
+        with:
+          submodules: 'true'
       - uses: chrislennon/action-aws-cli@f0f8671
       - name: tag
         run: |
           TAG=`git describe --tags $GITHUB_SHA`
           echo "TAG=$TAG" >> $GITHUB_ENV
-      - name: Checkout Submodules
-        run: git submodule update --init --recursive
       - name: Fetch Deps
         run: ci/actions/osx/install_deps.sh
       - name: Build Artifact
@@ -37,15 +37,17 @@ jobs:
   linux_job:
     runs-on: ubuntu-18.04
     steps:
-      - uses: actions/checkout@722adc6
+      - uses: actions/checkout@5a4ac90
+        with:
+          submodules: 'true'
       - uses: chrislennon/action-aws-cli@f0f8671
       - name: tag
         run: |
           TAG=`git describe --tags $GITHUB_SHA`
           echo "TAG=$TAG" >> $GITHUB_ENV
-      - name: Checkout Submodules
-        run: git submodule update --init --recursive
       - name: Fetch Deps
+        env:
+          COMPILER: gcc
         run: ci/actions/linux/install_deps.sh
       - name: Build Artifact
         run: docker run -v ${GITHUB_WORKSPACE}:/workspace nanocurrency/nano-env:gcc /bin/bash -c "cd /workspace && BETA=1 TRAVIS_TAG=${TAG} ci/build-deploy.sh /usr/lib/x86_64-linux-gnu/cmake/Qt5 ${PWD}"
@@ -59,15 +61,17 @@ jobs:
   linux_docker_job:
     runs-on: ubuntu-18.04
     steps:
-      - uses: actions/checkout@722adc6
+      - uses: actions/checkout@5a4ac90
+        with:
+          submodules: 'true'
       - uses: chrislennon/action-aws-cli@f0f8671
       - name: tag
         run: |
           TAG=`git describe --tags $GITHUB_SHA`
           echo "TAG=$TAG" >> $GITHUB_ENV
-      - name: Checkout Submodules
-        run: git submodule update --init --recursive
       - name: Fetch Deps
+        env: 
+          COMPILER: gcc
         run: ci/actions/linux/install_deps.sh
       - name: Deploy Docker (nanocurrency/nano-beta)
         run: TRAVIS_TAG=${TAG} ci/actions/linux/deploy-docker.sh
@@ -85,14 +89,14 @@ jobs:
   windows_job:
     runs-on: windows-latest
     steps:
-      - uses: actions/checkout@722adc6
+      - uses: actions/checkout@5a4ac90
+        with:
+          submodules: 'true'
       - uses: chrislennon/action-aws-cli@f0f8671
       - name: tag
         run: |
           $TAG=git describe --tags $GITHUB_SHA
           echo "TAG=$TAG" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
-      - name: Checkout Submodules
-        run: git submodule update --init --recursive
       - name: Fetch Deps
         run: ci/actions/windows/install_deps.ps1
       - name: Build Artifact

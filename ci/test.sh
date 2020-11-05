@@ -48,7 +48,7 @@ run_tests() {
         TIMEOUT_TIME_ARG=""
     fi
 
-    if [ "$(date +%s)" -lt 1609459199 ]; then # Dec 31 2020 23:59:59 UTC
+    if [ "$(date +%s)" -lt 1609459199 ]  && [ ${LCOV-0} != 1 ]; then # Dec 31 2020 23:59:59 UTC
         tries=(_initial_ 1 2 3 4 5 6 7 8 9)
     else
         tries=(_initial_)
@@ -69,7 +69,7 @@ run_tests() {
         fi
     done
 
-    xvfb_run_ ./rpc_test
+    ${TIMEOUT_CMD} ${TIMEOUT_TIME_ARG} ${TIMEOUT_SEC-${TIMEOUT_DEFAULT}} ./rpc_test
     rpc_test_res=${?}
     
     xvfb_run_ ./qt_test
@@ -82,7 +82,16 @@ run_tests() {
     echo "RPC  Test return code: ${rpc_test_res}"
     echo "QT Test return code: ${qt_test_res}"
     echo "Load Test return code: ${load_test_res}"
-    return ${core_test_res}
+    if [[ ${core_test_res} -ne 0 ]]; then
+        return ${core_test_res}
+    elif [[ ${rpc_test_res} -ne 0 ]]; then
+        return ${rpc_test_res}
+    elif [[ ${qt_test_res} -ne 0 ]]; then
+        return ${qt_test_res}
+    elif [[ ${load_test_res} -ne 0 ]]; then
+        return ${load_test_res}
+    fi
+    return 0
 }
 
 cd ${build_dir}

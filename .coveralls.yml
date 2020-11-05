@@ -1,0 +1,10 @@
+service_name: github
+parallel: true
+exclude:
+  - 'nano/core_test/'
+  - 'nano/crypto/'
+  - 'nano/*_test/'
+  - 'nano/ipc_fl*/'
+  - 'nano/nano_*/*'
+  - 'nano/qt*/**/*'
+  - 'nano/test_common/**/*'

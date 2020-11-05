@@ -32,6 +32,7 @@ COPY docker/node/config /usr/share/nano/config
 COPY --from=0 /tmp/boost/lib/* /usr/local/lib/
 RUN chmod +x /usr/bin/entry.sh
 RUN ln -s /usr/bin/nano_node /usr/bin/rai_node
+RUN apt-get update -qq && apt-get install -yqq ocl-icd-opencl-dev binutils
 RUN ldconfig
 
 WORKDIR /root

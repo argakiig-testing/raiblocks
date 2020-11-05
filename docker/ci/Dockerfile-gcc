@@ -1,6 +1,7 @@
 FROM nanocurrency/nano-env:base
 
-RUN apt-get install -yqq git
+RUN apt-get update -yqq && apt-get install -yqq git lcov python3-pip
+RUN python3 -m pip install cpp_coveralls pyyaml
 
 ENV BOOST_ROOT=/tmp/boost
 
