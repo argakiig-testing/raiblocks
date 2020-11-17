@@ -7,9 +7,9 @@ COPY ./ /tmp/src
 
 RUN mkdir /tmp/build
 WORKDIR /tmp/build 
-RUN cmake /tmp/src -DCI_BUILD="${CI_BUILD}" \
--DBOOST_ROOT="${BOOST_ROOT}" -DPORTABLE=1 \
--DACTIVE_NETWORK="nano_${NETWORK}_network" \
+RUN cmake /tmp/src "-DCI_BUILD=${CI_BUILD}" \
+"-DBOOST_ROOT=${BOOST_ROOT}" -DPORTABLE=1 \
+"-DACTIVE_NETWORK=nano_${NETWORK}_network" \
 -DNANO_POW_SERVER=ON -DNANO_SHARED_BOOST=ON && \
 make nano_node -j $(nproc) && \
 make nano_rpc -j $(nproc) && \
