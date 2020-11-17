@@ -5,59 +5,86 @@ on: [push, pull_request]
 env:
   RELEASE: 0
   artifact: 0
-  
+
 jobs:
   osx_test:
-    runs-on: macOS-latest
+    name: OSX unit tests [TEST_USE_ROCKSDB=${{ matrix.TEST_USE_ROCKSDB }}]
+    strategy:
+      fail-fast: false
+      matrix:
+        TEST_USE_ROCKSDB:
+          - 0
+          - 1
+    runs-on: macos-latest
     env:
       BOOST_ROOT: /tmp/boost
+      DEADLINE_SCALE_FACTOR: 2
     if: github.event_name == 'push' || github.event.pull_request.head.repo.full_name != github.repository
     steps:
-      - uses: actions/checkout@722adc6
-      - name: Checkout Submodules
-        run: git submodule update --init --recursive
+      - uses: actions/checkout@5a4ac90
+        with:
+          submodules: "true"
       - name: Fetch Deps
         run: TEST=1 ci/actions/osx/install_deps.sh
-      - name: Run Tests
+      - name: Build Tests
+        env:
+          TEST_USE_ROCKSDB: ${{ matrix.TEST_USE_ROCKSDB }}
         run: ci/build-travis.sh "/tmp/qt/lib/cmake/Qt5";
+      - name: Build Tests
+        env:
+          TEST_USE_ROCKSDB: ${{ matrix.TEST_USE_ROCKSDB }}
+        run: cd build && sudo cmake --build . --target run_tests -k
 
-  gcc_test:
+  linux_test:
+    name: Linux Unit Tests [TEST_USE_ROCKSDB=${{ matrix.TEST_USE_ROCKSDB }} - COMPILER=${{ matrix.COMPILER }}]
+    strategy:
+      fail-fast: false
+      matrix:
+        TEST_USE_ROCKSDB:
+          - 0
+          - 1
+        COMPILER:
+          - gcc
+          - clang-6
     runs-on: ubuntu-18.04
-    timeout-minutes: 60
     if: github.event_name == 'push' || github.event.pull_request.head.repo.full_name != github.repository
     steps:
-      - uses: actions/checkout@722adc6
-      - name: Checkout Submodules
-        run: git submodule update --init --recursive
+      - uses: actions/checkout@5a4ac90
+        with:
+          submodules: "true"
       - name: Fetch Deps
+        env:
+          COMPILER: ${{ matrix.COMPILER }}
         run: ci/actions/linux/install_deps.sh
+      - name: Build Tests
+        env:
+          TEST_USE_ROCKSDB: ${{ matrix.TEST_USE_ROCKSDB }}
+        run: docker run -e TEST_USE_ROCKSDB -v ${PWD}:/workspace nanocurrency/nano-env:${{ matrix.COMPILER }} /bin/bash -c "cd /workspace && ./ci/build-travis.sh /usr/lib/x86_64-linux-gnu/cmake/Qt5 ${PWD}"
       - name: Run Tests
-        run: docker run -v ${PWD}:/workspace nanocurrency/nano-env:gcc /bin/bash -c "cd /workspace && ./ci/build-travis.sh /usr/lib/x86_64-linux-gnu/cmake/Qt5 ${PWD}"
-  
-  clang_test:
-    runs-on: ubuntu-18.04
-    timeout-minutes: 60
-    if: github.event_name == 'push' || github.event.pull_request.head.repo.full_name != github.repository
-    steps:
-      - uses: actions/checkout@722adc6
-      - name: Checkout Submodules
-        run: git submodule update --init --recursive
-      - name: Fetch Deps
-        run: ci/actions/linux/install_deps.sh
-      - name: Run Tests
-        run: docker run -v ${PWD}:/workspace nanocurrency/nano-env:clang-6 /bin/bash -c "cd /workspace && ./ci/build-travis.sh /usr/lib/x86_64-linux-gnu/cmake/Qt5 ${PWD}"
+        env:
+          TEST_USE_ROCKSDB: ${{ matrix.TEST_USE_ROCKSDB }}
+        run: docker run -e TEST_USE_ROCKSDB -v ${PWD}:/workspace nanocurrency/nano-env:${{ matrix.COMPILER }} /bin/bash -c "cd /workspace/build && cmake --build . --target run_tests"
 
   windows_test:
+    timeout-minutes: 90
+    name: Windows Unit Tests [TEST_USE_ROCKSDB=${{ matrix.TEST_USE_ROCKSDB }}]
+    strategy:
+      fail-fast: false
+      matrix:
+        TEST_USE_ROCKSDB:
+          - 0
+          - 1
     runs-on: windows-latest
-    timeout-minutes: 60
     if: github.event_name == 'push' || github.event.pull_request.head.repo.full_name != github.repository
     steps:
-      - uses: actions/checkout@722adc6
+      - uses: actions/checkout@5a4ac90
+        with:
+          submodules: "true"
       - name: Windows Defender
         run: ci/actions/windows/disable_windows_defender.ps1
-      - name: Checkout Submodules
-        run: git submodule update --init --recursive
       - name: Fetch Deps
         run: ci/actions/windows/install_deps.ps1
       - name: Run Tests
+        env:
+          TEST_USE_ROCKSDB: ${{ matrix.TEST_USE_ROCKSDB }}
         run: ci/actions/windows/build.ps1

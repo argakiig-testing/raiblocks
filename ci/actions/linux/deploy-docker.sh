@@ -2,9 +2,8 @@
 
 set -e
 
-
 scripts="$PWD/ci"
-TRAVIS_BRANCH=`git branch| cut -f2 -d' '`
+TRAVIS_BRANCH=$(git branch | cut -f2 -d' ')
 tags=()
 if [ -n "$TRAVIS_TAG" ]; then
     tags+=("$TRAVIS_TAG" latest)
@@ -52,7 +51,7 @@ if [ -n "$DOCKER_PASSWORD" ]; then
         echo "Deployed nano-env"
         exit 0
     else
-        tags=`docker images --format '{{.Repository}}:{{.Tag }}'| grep nanocurrency |grep -vE "env|ghcr.io|none"`
+        tags=$(docker images --format '{{.Repository}}:{{.Tag }}' | grep nanocurrency | grep -vE "env|ghcr.io|none")
         for a in $tags; do
             "$scripts"/custom-timeout.sh 30 docker push "$a"
         done

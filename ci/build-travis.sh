@@ -6,7 +6,7 @@ src_dir=${2}
 set -o errexit
 set -o nounset
 set -o xtrace
-OS=`uname`
+OS=$(uname)
 
 # This is to prevent out of scope access in async_write from asio which is not picked up by static analysers
 if [[ $(grep -rl --exclude="*asio.hpp" "asio::async_write" ./nano) ]]; then
@@ -31,8 +31,6 @@ pushd build
 
 if [[ ${RELEASE-0} -eq 1 ]]; then
     BUILD_TYPE="RelWithDebInfo"
-else
-    BUILD_TYPE="Debug"
 fi
 
 if [[ ${ASAN_INT-0} -eq 1 ]]; then
@@ -41,46 +39,46 @@ elif [[ ${ASAN-0} -eq 1 ]]; then
     SANITIZERS="-DNANO_ASAN=ON"
 elif [[ ${TSAN-0} -eq 1 ]]; then
     SANITIZERS="-DNANO_TSAN=ON"
-else
-    SANITIZERS=""
+elif [[ ${LCOV-0} -eq 1 ]]; then
+    SANITIZERS="-DCOVERAGE=ON"
 fi
 
 ulimit -S -n 8192
 
 if [[ "$OS" == 'Linux' ]]; then
-    if clang --version; then
+    if clang --version && [ ${LCOV-0} == 0 ]; then
         BACKTRACE="-DNANO_STACKTRACE_BACKTRACE=ON \
         -DBACKTRACE_INCLUDE=</tmp/backtrace.h>"
     else
         BACKTRACE="-DNANO_STACKTRACE_BACKTRACE=ON"
     fi
-else
-    BACKTRACE=""
 fi
 
 cmake \
-    -G'Unix Makefiles' \
-    -DACTIVE_NETWORK=nano_dev_network \
-    -DNANO_TEST=ON \
-    -DNANO_GUI=ON \
-    -DPORTABLE=1 \
-    -DNANO_WARN_TO_ERR=ON \
-    -DCMAKE_BUILD_TYPE=${BUILD_TYPE} \
-    -DCMAKE_VERBOSE_MAKEFILE=ON \
-    -DBOOST_ROOT=/tmp/boost/ \
-    -DNANO_SHARED_BOOST=ON \
-    -DQt5_DIR=${qt_dir} \
-    -DCI_TEST="1" \
-    ${BACKTRACE} \
-    ${SANITIZERS} \
-    ..
+-G'Unix Makefiles' \
+-DACTIVE_NETWORK=nano_dev_network \
+-DNANO_TEST=ON \
+-DNANO_GUI=ON \
+-DPORTABLE=1 \
+-DNANO_WARN_TO_ERR=ON \
+-DCMAKE_BUILD_TYPE=${BUILD_TYPE-Debug} \
+-DCMAKE_VERBOSE_MAKEFILE=ON \
+-DBOOST_ROOT=${BOOST_ROOT-/tmp/boost/} \
+-DNANO_SHARED_BOOST=ON \
+-DQt5_DIR=${qt_dir} \
+-DCI_TEST="1" \
+${BACKTRACE-} \
+${SANITIZERS-} \
+${src_dir}
 
 if [[ "$OS" == 'Linux' ]]; then
-    cmake --build ${PWD} -- -j2
+    if [[ ${LCOV-0} == 1 ]]; then
+        cmake --build ${PWD} --target generate_coverage -k -- -j2
+    else
+        cmake --build ${PWD} --target build_tests -k -- -j2
+    fi
 else
-    sudo cmake --build ${PWD} -- -j2
+    sudo cmake --build ${PWD} --target build_tests -k -- -j2
 fi
 
 popd
-
-./ci/test.sh ./build
