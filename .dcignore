@@ -1,0 +1,11 @@
+CL/
+cpptoml/
+crypto/
+flatbuffers/
+gtest/
+lmdb/
+miniupnp/
+rocksdb/
+valgrid/
+nano/*_test/
+nano/test_common/

@@ -89,4 +89,3 @@ util/build_prep/*/prep.sh
 
 # deepcode.ai artifacts
 .dccache
-.dcignore
